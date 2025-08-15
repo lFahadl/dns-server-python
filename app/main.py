@@ -66,7 +66,6 @@ def generate_header(format, config):
     # struct.pack will convert the values into a bytes object
     # big endian is a byte ordering format
 
-
     domain_name = encode_dns_name(config["name"])
 
     # Each \xNN is one byte (8 bits).
