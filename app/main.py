@@ -33,7 +33,7 @@ def encode_dns_name(name: str) -> bytes:
     return encoded
 
 
-def generate_header(format, config):
+def generate_response(format, config):
     # Pack flags into a single 16-bit integer
     flags = (
         # hex values are bit masks to limit the values to the appropriate bits
@@ -87,9 +87,14 @@ def main():
     while True:
         try:
             buf, source = udp_socket.recvfrom(512)
+            # buf is a bytes object containing the received data
+            # b'*\xb9\x01 \x00\x01\x00\x00\x00\x00\x00\x00\x0ccodecrafters\x02io\x00\x00\x01\x00\x01'
+            # * is a byte.
+            # first two bytes are the ID
 
-            header = generate_header('!HHHHHH', header_config)
-            response = header
+            print(buf)
+
+            response = generate_response('!HHHHHH', header_config)
 
             udp_socket.sendto(response, source)
         except Exception as e:
