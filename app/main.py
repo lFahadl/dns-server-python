@@ -13,12 +13,24 @@ header_config = OrderedDict(
         "ra": 0,
         "z": 0,
         "rcode": 0,
-        "qdcount": 0,
+        "qdcount": 1, # Number of questions
         "ancount": 0,
         "nscount": 0,
         "arcount": 0,
+        "name": "codecrafters.io",
+        "qtype": 1,
+        "qclass": 1,
     }
 )
+
+
+def encode_dns_name(name: str) -> bytes:
+    parts = name.split('.')
+    encoded = b''
+    for part in parts:
+        encoded += bytes([len(part)]) + part.encode('ascii')
+    encoded += b'\x00'
+    return encoded
 
 
 def generate_header(format, config):
@@ -27,9 +39,9 @@ def generate_header(format, config):
         # hex values are bit masks to limit the values to the appropriate bits
         # creates a 16-bit integer with header flags packed
         # << bitwise left shift
-        # single operation returns an integer
+        # (1 & 0x1) << 15 returns an integer
         (config["qr"] & 0x1) << 15 # Left shift by 15 positions (add 15 zeros to the right). equivalent to multiplying by 2^15
-        | (config["opcode"] & 0xF) << 11
+        | (config["opcode"] & 0xF) << 11 # & 0xF limits the value to 4 bits (0-15)
         | (config["aa"] & 0x1) << 10
         | (config["tc"] & 0x1) << 9
         | (config["rd"] & 0x1) << 8
@@ -37,6 +49,7 @@ def generate_header(format, config):
         | (config["z"] & 0x7) << 4
         | (config["rcode"] & 0xF)
     )
+
     packed_fields = OrderedDict(
         [
             ("id", config["id"]),
@@ -52,7 +65,15 @@ def generate_header(format, config):
     # "H" means "give me an integer, I'll convert it to 2 bytes"
     # struct.pack will convert the values into a bytes object
     # big endian is a byte ordering format
-    return struct.pack(">HHHHHH", *packed_fields.values())
+
+
+    domain_name = encode_dns_name(config["name"])
+
+    # Each \xNN is one byte (8 bits).
+
+    header = struct.pack(">HHHHHH", *packed_fields.values())
+    question = domain_name + struct.pack(">HH", config["qtype"], config["qclass"])
+    return header + question
 
 
 
@@ -60,8 +81,7 @@ def main():
     # You can use print statements as follows for debugging, they'll be visible when running tests.
     print("Logs from your program will appear here!")
 
-    # Uncomment this block to pass the first stage
-    #
+
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_socket.bind(("127.0.0.1", 2053))
 
