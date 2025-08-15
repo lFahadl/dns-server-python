@@ -14,9 +14,9 @@ header_config = OrderedDict(
         "z": 0,
         "rcode": 0,
         "qdcount": 1, # Number of questions
-        "ancount": 0,
+        "ancount": 1, # Number of answer records
         "nscount": 0,
-        "arcount": 0,
+        "arcount": 1, # Number of additional records
         "name": "codecrafters.io",
         "qtype": 1,
         "qclass": 1,
@@ -72,7 +72,8 @@ def generate_response(format, config):
 
     header = struct.pack(">HHHHHH", *packed_fields.values())
     question = domain_name + struct.pack(">HH", config["qtype"], config["qclass"])
-    return header + question
+    answer = domain_name + struct.pack(">HHIH", config["qtype"], config["qclass"], 60, 4) + b"\x7f\x00\x00\x01"
+    return header + question + answer
 
 
 
