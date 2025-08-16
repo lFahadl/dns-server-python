@@ -19,17 +19,16 @@ def encode_dns_name(name: str) -> bytes:
     return encoded
 
 
-def generate_response(config=None, buffer: bytes = None):
+def generate_response(buffer: bytes = None):
 
     codes = struct.unpack(">H", buffer[2:4])[0] # section after the ID
     opcode = (codes >> 11) & 0xF
     rd = (codes >> 8) & 0x1
-
     rcode = 0 if opcode == 0 else 4
 
 
 
-    header_config = OrderedDict(
+    config = OrderedDict(
         {
             "qr": 1,
             "opcode": opcode,
