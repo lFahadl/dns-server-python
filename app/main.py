@@ -25,6 +25,10 @@ def generate_response(buffer: bytes = None):
     opcode = (codes >> 11) & 0xF
     rd = (codes >> 8) & 0x1
     rcode = 0 if opcode == 0 else 4
+    domain_label_seq = buffer[12:]
+    end = domain_label_seq.find(b'\x00') + 1
+    label_sequence = domain_label_seq[:end] # domain name as label sequence
+
 
 
 
@@ -83,13 +87,13 @@ def generate_response(buffer: bytes = None):
     # struct.pack will convert the values into a bytes object
     # big endian is a byte ordering format
 
-    domain_name = encode_dns_name(config["name"])
+    # domain_name = encode_dns_name(config["name"])
 
     # Each \xNN is one byte (8 bits).
 
     header = struct.pack(">HHHHHH", *packed_fields.values())
-    question = domain_name + struct.pack(">HH", config["qtype"], config["qclass"])
-    answer = domain_name + struct.pack(">HHIH", config["qtype"], config["qclass"], 60, 4) + b"\x7f\x00\x00\x01"
+    question = label_sequence + struct.pack(">HH", config["qtype"], config["qclass"])
+    answer = label_sequence + struct.pack(">HHIH", config["qtype"], config["qclass"], 60, 4) + b"\x7f\x00\x00\x01"
     return header + question + answer
 
 
