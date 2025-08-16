@@ -33,7 +33,7 @@ def encode_dns_name(name: str) -> bytes:
     return encoded
 
 
-def generate_response(format, config):
+def generate_response(config, buffer: bytes = None):
     # Pack flags into a single 16-bit integer
     flags = (
         # hex values are bit masks to limit the values to the appropriate bits
@@ -50,9 +50,11 @@ def generate_response(format, config):
         | (config["rcode"] & 0xF)
     )
 
+    pid = struct.unpack(">H", buffer[:2])[0] if buffer else config["id"]
+
     packed_fields = OrderedDict(
         [
-            ("id", config["id"]),
+            ("id", pid),
             ("flags", flags),
             ("qdcount", config["qdcount"]),
             ("ancount", config["ancount"]),
@@ -95,7 +97,7 @@ def main():
 
             print(buf)
 
-            response = generate_response('!HHHHHH', header_config)
+            response = generate_response(header_config, buffer=buf)
 
             udp_socket.sendto(response, source)
         except Exception as e:
