@@ -2,26 +2,12 @@ import socket
 import struct
 from collections import OrderedDict
 
-header_config = OrderedDict(
-    {
-        "id": 1234,
-        "qr": 1,
-        "opcode": 0,
-        "aa": 0,
-        "tc": 0,
-        "rd": 0,
-        "ra": 0,
-        "z": 0,
-        "rcode": 0,
-        "qdcount": 1, # Number of questions
-        "ancount": 1, # Number of answer records
-        "nscount": 0,
-        "arcount": 1, # Number of additional records
-        "name": "codecrafters.io",
-        "qtype": 1,
-        "qclass": 1,
-    }
-)
+
+
+
+
+
+
 
 
 def encode_dns_name(name: str) -> bytes:
@@ -33,7 +19,37 @@ def encode_dns_name(name: str) -> bytes:
     return encoded
 
 
-def generate_response(config, buffer: bytes = None):
+def generate_response(config=None, buffer: bytes = None):
+
+    codes = struct.unpack(">H", buffer[2:4])[0] # section after the ID
+    opcode = (codes >> 11) & 0xF
+    rd = (codes >> 8) & 0x1
+
+    rcode = 0 if opcode == 0 else 4
+
+
+
+    header_config = OrderedDict(
+        {
+            "qr": 1,
+            "opcode": opcode,
+            "aa": 0,
+            "tc": 0,
+            "rd": rd, # Recursion Desired
+            "ra": 0,
+            "z": 0,
+            "rcode": rcode,
+            "qdcount": 1, # Number of questions
+            "ancount": 1, # Number of answer records
+            "nscount": 0,
+            "arcount": 1, # Number of additional records
+            "name": "codecrafters.io",
+            "qtype": 1,
+            "qclass": 1,
+        }
+    )
+
+
     # Pack flags into a single 16-bit integer
     flags = (
         # hex values are bit masks to limit the values to the appropriate bits
@@ -95,9 +111,9 @@ def main():
             # * is a byte.
             # first two bytes are the ID
 
-            print(buf)
+            print("buffer bytes: ",buf)
 
-            response = generate_response(header_config, buffer=buf)
+            response = generate_response(buffer=buf)
 
             udp_socket.sendto(response, source)
         except Exception as e:
