@@ -3,34 +3,23 @@ import struct
 from collections import OrderedDict
 
 
-
-
-
-
-
-
-
 def encode_dns_name(name: str) -> bytes:
-    parts = name.split('.')
-    encoded = b''
+    parts = name.split(".")
+    encoded = b""
     for part in parts:
-        encoded += bytes([len(part)]) + part.encode('ascii')
-    encoded += b'\x00'
+        encoded += bytes([len(part)]) + part.encode("ascii")
+    encoded += b"\x00"
     return encoded
 
 
 def generate_response(buffer: bytes = None):
-
-    codes = struct.unpack(">H", buffer[2:4])[0] # section after the ID
+    codes = struct.unpack(">H", buffer[2:4])[0]  # section after the ID
     opcode = (codes >> 11) & 0xF
     rd = (codes >> 8) & 0x1
     rcode = 0 if opcode == 0 else 4
     domain_label_seq = buffer[12:]
-    end = domain_label_seq.find(b'\x00') + 1
-    label_sequence = domain_label_seq[:end] # domain name as label sequence
-
-
-
+    end = domain_label_seq.find(b"\x00") + 1
+    label_sequence = domain_label_seq[:end]  # domain name as label sequence
 
     config = OrderedDict(
         {
@@ -38,20 +27,19 @@ def generate_response(buffer: bytes = None):
             "opcode": opcode,
             "aa": 0,
             "tc": 0,
-            "rd": rd, # Recursion Desired
+            "rd": rd,  # Recursion Desired
             "ra": 0,
             "z": 0,
             "rcode": rcode,
-            "qdcount": 1, # Number of questions
-            "ancount": 1, # Number of answer records
+            "qdcount": 1,  # Number of questions
+            "ancount": 1,  # Number of answer records
             "nscount": 0,
-            "arcount": 1, # Number of additional records
+            "arcount": 1,  # Number of additional records
             "name": "codecrafters.io",
             "qtype": 1,
             "qclass": 1,
         }
     )
-
 
     # Pack flags into a single 16-bit integer
     flags = (
@@ -59,8 +47,9 @@ def generate_response(buffer: bytes = None):
         # creates a 16-bit integer with header flags packed
         # << bitwise left shift
         # (1 & 0x1) << 15 returns an integer
-        (config["qr"] & 0x1) << 15 # Left shift by 15 positions (add 15 zeros to the right). equivalent to multiplying by 2^15
-        | (config["opcode"] & 0xF) << 11 # & 0xF limits the value to 4 bits (0-15)
+        (config["qr"] & 0x1)
+        << 15  # Left shift by 15 positions (add 15 zeros to the right). equivalent to multiplying by 2^15
+        | (config["opcode"] & 0xF) << 11  # & 0xF limits the value to 4 bits (0-15)
         | (config["aa"] & 0x1) << 10
         | (config["tc"] & 0x1) << 9
         | (config["rd"] & 0x1) << 8
@@ -93,15 +82,17 @@ def generate_response(buffer: bytes = None):
 
     header = struct.pack(">HHHHHH", *packed_fields.values())
     question = label_sequence + struct.pack(">HH", config["qtype"], config["qclass"])
-    answer = label_sequence + struct.pack(">HHIH", config["qtype"], config["qclass"], 60, 4) + b"\x7f\x00\x00\x01"
+    answer = (
+        label_sequence
+        + struct.pack(">HHIH", config["qtype"], config["qclass"], 60, 4)
+        + b"\x7f\x00\x00\x01"
+    )
     return header + question + answer
-
 
 
 def main():
     # You can use print statements as follows for debugging, they'll be visible when running tests.
     print("Logs from your program will appear here!")
-
 
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_socket.bind(("127.0.0.1", 2053))
@@ -114,7 +105,7 @@ def main():
             # * is a byte.
             # first two bytes are the ID
 
-            print("buffer bytes: ",buf)
+            print("buffer bytes: ", buf)
 
             response = generate_response(buffer=buf)
 
